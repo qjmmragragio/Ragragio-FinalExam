@@ -1,0 +1,43 @@
+---
+
+- hosts: all
+  become: true
+  pre_tasks:
+
+  - name: Fixing dpkg for ubuntu
+    tags: ubuntudpkg
+    shell: |
+      dpkg --configure -a
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Update ubuntu
+    tags: ubuntuupdate
+    apt:
+      update_cache: yes
+      upgrade: dist
+    when: ansible_distribution == "Ubuntu"
+
+  - name: download dnf and epel-release
+    tags: dldnfepel
+    yum:
+      name:
+        - epel-release
+        - dnf
+    when: ansible_distribution == "CentOS"
+
+  - name: Update centos
+    tags: centosupdate
+    dnf:
+      update_cache: yes
+      update_only: yes
+    when: ansible_distribution == "CentOS"
+
+- hosts: centos
+  become: true
+  roles:
+    - role: centos
+
+- hosts: ubuntu
+  become: true
+  roles:
+    - role: ubuntu

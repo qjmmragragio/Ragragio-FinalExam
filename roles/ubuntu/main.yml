@@ -1,0 +1,109 @@
+- name: Installing nagios dependecies and libraries.
+  tags: dependecies, libraries
+  apt:
+    name:
+      - autoconf
+      - gcc
+      - libc6
+      - make
+      - wget
+      - unzip
+      - apache2
+      - php
+      - libapache2-mod-php7.4
+      - libgd-dev
+      -  openssl
+      - libssl-dev
+      - autoconf
+      - gcc
+      - libc6
+      - libmcrypt-dev
+      - make
+      - libssl-dev
+      - wget
+      - bc
+      - gawk
+      - dc
+      - build-essential
+      - snmp
+      - libnet-snmp-perl
+      - gettext
+      - python3-pip
+      - python3
+    state: latest
+
+- name: Install passlib python
+  tags: passlib
+  pip:
+    name: passlib
+
+- name: Directory for nagios
+  tags: nagiosdirectory
+  file:
+    path: ~/nagios
+    state: directory
+
+- name: Download nagios
+  tags: dlnagios
+  unarchive:
+    src: https://github.com/NagiosEnterprises/nagioscore/archive/nagios-4.4.6.tar.gz
+    dest: ~/nagios
+    remote_src: yes
+    mode: 0755
+    owner: root
+    group: root
+
+- name: Setting up nagios
+  tags: nagiossetup
+  shell: |
+    cd ~/nagios/nagioscore-*
+    sudo ./configure --with-httpd-conf=/etc/apache2/sites-enabled
+    sudo make all
+    sudo make install-groups-users
+    sudo usermod -a -G nagios www-data
+    sudo make install
+    sudo make install-daemoninit
+    sudo make install-commandmode
+    sudo make install-config
+    sudo make install-webconf
+    sudo a2enmod rewrite
+    sudo a2enmod cgi
+
+- name: Downloading nagios plugin
+  tags: nagiosplugin
+  unarchive:
+    src: https://github.com/nagios-plugins/nagios-plugins/archive/release-2.3.3.tar.gz
+    dest: ~/nagios
+    remote_src: yes
+    mode: 0755
+    owner: root
+    group: root
+
+- name: Setting up nagios plugin
+  tags: nagiospluginsetup
+  shell: |
+    cd ~/nagios/nagios-plugins*
+    ./tools/setup
+    ./configure
+    make
+    make install
+
+- name: Enable nagios
+  tags: enablenagios
+  service:
+    name: nagios
+    state: restarted
+    enabled: true
+
+- name: Enable httpd
+  tags: enablehttpd
+  service:
+    name: apache2
+    state: restarted
+    enabled: true
+
+- name: MOTD Banner
+  tags: banner
+  copy:
+    dest: /etc/motd
+    content: "Ansible Managed Node by qjmmragragio"
